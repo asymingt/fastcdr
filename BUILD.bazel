@@ -1,13 +1,12 @@
+load(
+    "@cmake_configure_file//:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
-
-load(
-    "@cmake_configure_file//:cmake_configure_file.bzl",
-    "cmake_configure_file",
-)
 
 config_setting(
     name = "osx_arm64",
@@ -45,22 +44,14 @@ cmake_configure_file(
 
 cc_library(
     name = "fastcdr",
+    srcs = glob([
+        "src/**/*.cpp",
+    ]),
     hdrs = glob([
         "include/**/*.h",
-        "include/**/*.hpp"
+        "include/**/*.hpp",
     ]) + [
         ":config",
-    ],
-    srcs = [
-        "src/cpp/Cdr.cpp",
-        "src/cpp/CdrSizeCalculator.cpp",
-        "src/cpp/FastCdr.cpp",
-        "src/cpp/FastBuffer.cpp",
-        "src/cpp/exceptions/BadOptionalAccessException.cpp",
-        "src/cpp/exceptions/BadParamException.cpp",
-        "src/cpp/exceptions/Exception.cpp",
-        "src/cpp/exceptions/LockedExternalAccessException.cpp",
-        "src/cpp/exceptions/NotEnoughMemoryException.cpp",
     ],
     strip_include_prefix = "include",
 )
