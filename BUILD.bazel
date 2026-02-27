@@ -1,12 +1,25 @@
+# Copyright 2026 Open Source Robotics Foundation, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 load(
     "@cmake_configure_file//:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
-package(default_visibility = ["//visibility:public"])
-
-licenses(["notice"])
+package(default_visibility = ["//visibility:private"])
 
 config_setting(
     name = "osx_arm64",
@@ -29,8 +42,8 @@ cmake_configure_file(
         "HAVE_CXX11",
         "PROJECT_VERSION=2.3.0",
         "PROJECT_VERSION_MAJOR=2",
-        "PROJECT_VERSION_MINOR=2",
-        "PROJECT_VERSION_PATCH=2",
+        "PROJECT_VERSION_MINOR=3",
+        "PROJECT_VERSION_PATCH=0",
     ] + select({
         ":osx_arm64": [
             "FASTCDR_SIZEOF_LONG_DOUBLE=8",
@@ -39,19 +52,65 @@ cmake_configure_file(
             "FASTCDR_SIZEOF_LONG_DOUBLE=16",
         ],
     }),
-    visibility = ["//visibility:private"],
 )
 
 cc_library(
     name = "fastcdr",
-    srcs = glob([
-        "src/**/*.cpp",
-    ]),
+    srcs = [
+        "src/cpp/Cdr.cpp",
+        "src/cpp/CdrSizeCalculator.cpp",
+        "src/cpp/FastBuffer.cpp",
+        "src/cpp/FastCdr.cpp",
+        "src/cpp/exceptions/BadOptionalAccessException.cpp",
+        "src/cpp/exceptions/BadParamException.cpp",
+        "src/cpp/exceptions/Exception.cpp",
+        "src/cpp/exceptions/LockedExternalAccessException.cpp",
+        "src/cpp/exceptions/NotEnoughMemoryException.cpp",
+    ],
     hdrs = glob([
         "include/**/*.h",
         "include/**/*.hpp",
     ]) + [
         ":config",
     ],
+    cxxopts = ["-std=c++17"],
     strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+)
+
+# CDR tests
+
+[
+    cc_test(
+        name = name,
+        srcs = srcs + ["test/xcdr/utility.hpp"],
+        deps = [
+            ":fastcdr",
+            "@googletest//:gtest",
+            "@googletest//:gtest_main",
+        ],
+    )
+    for name, srcs in {
+        "FixedSizeStringTests": ["test/cdr/fixed_size_string.cpp"],
+        "ArrayAsSTDVectorTests": ["test/cdr/array_as_std_vector.cpp"],
+        "UnitTests": [
+            "test/cdr/ResizeTest.cpp",
+            "test/cdr/SimpleTest.cpp",
+        ],
+    }.items()
+]
+
+# XCDR tests
+
+cc_test(
+    name = "xcdr_tests",
+    srcs = glob([
+        "test/xcdr/*.hpp",
+        "test/xcdr/*.cpp",
+    ]),
+    deps = [
+        ":fastcdr",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
 )
